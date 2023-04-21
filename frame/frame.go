@@ -160,9 +160,7 @@ func (f *Frame) AddFields(newFields []*FieldDesc) error {
 	return nil
 }
 
-func (f *Frame) Encode() ([]byte, error) {
-	buffer := &buffer.Buffer{}
-	buffer.Init(f.bitSize)
+func (f *Frame) encode(buffer *buffer.Buffer) error {
 	for _, field := range f.fields {
 		currentValue, _ := f.vars.Get(field.name)
 		var err error
@@ -202,8 +200,28 @@ func (f *Frame) Encode() ([]byte, error) {
 			}
 		}
 		if err != nil {
-			return nil, err
+			return err
 		}
+	}
+	return nil
+}
+
+func (f *Frame) EncodeTo(out []byte) error {
+	buffer := &buffer.Buffer{}
+	buffer.InitFromRawBuffer(out)
+	err := f.encode(buffer)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *Frame) Encode() ([]byte, error) {
+	buffer := &buffer.Buffer{}
+	buffer.Init(f.bitSize)
+	err := f.encode(buffer)
+	if err != nil {
+		return nil, err
 	}
 	return buffer.GetRawBuffer(), nil
 }

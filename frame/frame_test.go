@@ -129,6 +129,14 @@ func Test_EncodeDecode(t *testing.T) {
 	buffer28bit, err := dstFrame.Get("28_BIT_BUFFER")
 	require.Nil(t, err)
 	require.Equal(t, []byte{0x12, 0x34, 0x56, 0x70}, buffer28bit)
+
+	// Test EncodeTo func
+	dstFrameEncoded, err := dstFrame.Encode()
+	require.NoError(t, err)
+	newRaw := make([]byte, len(dstFrameEncoded))
+	err = dstFrame.EncodeTo(newRaw)
+	require.NoError(t, err)
+	require.Equal(t, dstFrameEncoded, newRaw)
 }
 
 func Test_SetString(t *testing.T) {
