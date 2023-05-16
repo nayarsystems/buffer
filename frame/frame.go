@@ -45,31 +45,51 @@ func (f *Frame) GetCopy() *Frame {
 	return fcopy
 }
 
+func (f *Frame) getBufferFieldValueFromString(fieldName, s string) (newBuf []byte, err error) {
+	fieldDesc, ok := f.fieldsMap[fieldName]
+	if !ok {
+		err = fmt.Errorf("field \"%s\" does not exist", fieldName)
+		return
+	}
+	fieldByteSize := fieldDesc.size / 8
+	if fieldDesc.size%8 != 0 {
+		fieldByteSize += 1
+	}
+	strBuf := []byte(s)
+	if fieldByteSize > len(s) {
+		newBuf = make([]byte, fieldByteSize)
+		copy(newBuf, strBuf)
+		for i := len(strBuf); i < fieldByteSize; i++ {
+			newBuf[i] = 0
+		}
+	} else {
+		newBuf = strBuf
+	}
+	return
+}
+
 func (f *Frame) Same(fieldName string, newValue interface{}) (same bool, err error) {
-	return f.vars.Same(fieldName, newValue)
+	switch v := newValue.(type) {
+	case string:
+		var newBuf []byte
+		newBuf, err = f.getBufferFieldValueFromString(fieldName, v)
+		if err != nil {
+			return
+		}
+		same, err = f.vars.Same(fieldName, newBuf)
+	default:
+		same, err = f.vars.Same(fieldName, newValue)
+	}
+	return
 }
 
 func (f *Frame) Set(fieldName string, newValue interface{}) (err error) {
 	switch v := newValue.(type) {
 	case string:
-		fieldDesc, ok := f.fieldsMap[fieldName]
-		if !ok {
-			return fmt.Errorf("field \"%s\" does not exist", fieldName)
-		}
-		fieldByteSize := fieldDesc.size / 8
-		if fieldDesc.size%8 != 0 {
-			fieldByteSize += 1
-		}
-		strBuf := []byte(v)
 		var newBuf []byte
-		if fieldByteSize > len(v) {
-			newBuf = make([]byte, fieldByteSize)
-			copy(newBuf, strBuf)
-			for i := len(strBuf); i < fieldByteSize; i++ {
-				newBuf[i] = 0
-			}
-		} else {
-			newBuf = strBuf
+		newBuf, err = f.getBufferFieldValueFromString(fieldName, v)
+		if err != nil {
+			return
 		}
 		err = f.vars.Set(fieldName, newBuf)
 	default:

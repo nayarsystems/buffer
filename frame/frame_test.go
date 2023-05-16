@@ -178,6 +178,33 @@ func Test_SetString(t *testing.T) {
 	require.Equal(t, ebuf, v)
 }
 
+func Test_SameValue(t *testing.T) {
+	frame := CreateFrame()
+	fieldName := "STRING_BUFFER"
+	err := frame.AddFields([]*FieldDesc{
+		{
+			Name:         fieldName,
+			DefaultValue: []byte{},
+			Size:         (len("Hello") + 4) * 8,
+		},
+	})
+	require.NoError(t, err)
+
+	same, err := frame.Same(fieldName, "Hello")
+	require.NoError(t, err)
+	require.False(t, same)
+
+	_ = frame.Set(fieldName, "Hello")
+
+	same, err = frame.Same(fieldName, "Hello")
+	require.NoError(t, err)
+	require.True(t, same)
+
+	same, err = frame.Same(fieldName, 1)
+	require.NoError(t, err)
+	require.False(t, same)
+}
+
 func getBufferFieldInfoCopy(fields []*FieldDesc) []*FieldDesc {
 	fieldsCopy := []*FieldDesc{}
 	for _, field := range fields {
